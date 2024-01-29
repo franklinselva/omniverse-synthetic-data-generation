@@ -60,7 +60,7 @@ CONFIG = {
     "headless": args.headless,
     "width": args.width,
     "height": args.height,
-    "max_execs": args.num_frames,
+    "num_frames": args.num_frames,
 }
 
 simulation_app = SimulationApp(launch_config=CONFIG)

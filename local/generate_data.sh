@@ -10,6 +10,10 @@ OUTPUT_WAREHOUSE="$ROOT_DIR/data/palletjack/distractors_warehouse"
 OUTPUT_ADDITIONAL="$ROOT_DIR/data/palletjack/distractors_additional"
 OUTPUT_NO_DISTRACTORS="$ROOT_DIR/data/palletjack/no_distractors"
 
+# Source Omniverse environment and SDK
+# shellcheck source=/dev/null
+source "ISAAC_SIM_PATH/setup_python_env.sh"
+
 ## Go to Isaac Sim location for running with ./python.sh
 echo "Starting Data Generation"
 CMD_PREFIX="$ISAAC_SIM_PATH/python.sh"
