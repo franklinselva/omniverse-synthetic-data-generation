@@ -1,3 +1,4 @@
+"""Module to generate synthetic data for palletjack training using the replicator API"""
 # Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
 #
 #  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
@@ -59,7 +60,7 @@ CONFIG = {
     "headless": args.headless,
     "width": args.width,
     "height": args.height,
-    "num_frames": args.num_frames,
+    "max_execs": args.num_frames,
 }
 
 simulation_app = SimulationApp(launch_config=CONFIG)
@@ -84,9 +85,9 @@ rep.settings.carb_settings("/omni/replicator/RTSubframes", 4)
 
 # This is the location of the palletjacks in the simready asset library
 PALLETJACKS = [
-    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Scale_A/PalletTruckScale_A01_PR_NVD_01.usd",
-    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Heavy_Duty_A/HeavyDutyPalletTruck_A01_PR_NVD_01.usd",
-    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Low_Profile_A/LowProfilePalletTruck_A01_PR_NVD_01.usd",
+    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Scale_A/PalletTruckScale_A01_PR_NVD_01.usd",  # pylint: disable=line-too-long
+    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Heavy_Duty_A/HeavyDutyPalletTruck_A01_PR_NVD_01.usd",  # pylint: disable=line-too-long
+    "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/DigitalTwin/Assets/Warehouse/Equipment/Pallet_Trucks/Low_Profile_A/LowProfilePalletTruck_A01_PR_NVD_01.usd",  # pylint: disable=line-too-long
 ]
 
 
@@ -206,12 +207,10 @@ def update_semantics(stage, keep_semantics=[]):
     for prim in stage.Traverse():
         if prim.HasAPI(Semantics.SemanticsAPI):
             processed_instances = set()
-            for property in prim.GetProperties():
-                is_semantic = Semantics.SemanticsAPI.IsSemanticsAPIPath(
-                    property.GetPath()
-                )
+            for prop in prim.GetProperties():
+                is_semantic = Semantics.SemanticsAPI.IsSemanticsAPIPath(prop.GetPath())
                 if is_semantic:
-                    instance_name = property.SplitName()[1]
+                    instance_name = prop.SplitName()[1]
                     if instance_name in processed_instances:
                         # Skip repeated instance, instances are iterated twice due to their two semantic properties (class, data)
                         continue
@@ -234,9 +233,10 @@ def update_semantics(stage, keep_semantics=[]):
 
 # needed for loading textures correctly
 def prefix_with_isaac_asset_server(relative_path):
+    """Prefix the relative path with the Isaac Asset Server path"""
     assets_root_path = get_assets_root_path()
     if assets_root_path is None:
-        raise Exception(
+        raise RuntimeError(
             "Nucleus server not found, could not access Isaac Sim assets folder"
         )
     return assets_root_path + relative_path
@@ -260,6 +260,7 @@ def full_distractors_list(distractor_type="warehouse"):
 
 
 def full_textures_list():
+    """Load textures and return a list of them"""
     full_tex_list = []
     for texture in TEXTURES:
         full_tex_list.append(prefix_with_isaac_asset_server(texture))
@@ -268,6 +269,7 @@ def full_textures_list():
 
 
 def add_palletjacks():
+    """Add palletjacks to the scene"""
     rep_obj_list = [
         rep.create.from_usd(
             palletjack_path, semantics=[("class", "palletjack")], count=2
@@ -279,6 +281,7 @@ def add_palletjacks():
 
 
 def add_distractors(distractor_type="warehouse"):
+    """Add distractors to the scene"""
     full_distractors = full_distractors_list(distractor_type)
     distractors = [
         rep.create.from_usd(distractor_path, count=1)
@@ -290,6 +293,7 @@ def add_distractors(distractor_type="warehouse"):
 
 # This will handle replicator
 def run_orchestrator():
+    """Handle the orchestrator for the replicator"""
     rep.orchestrator.run()
 
     # Wait until started
@@ -305,6 +309,7 @@ def run_orchestrator():
 
 
 def main():
+    """Main function which will load the environment, add objects and run the replicator"""
     # Open the environment in a new stage
     print(f"Loading Stage {ENV_URL}")
     open_stage(prefix_with_isaac_asset_server(ENV_URL))
@@ -407,8 +412,8 @@ def main():
     )
 
     # attach camera render products to wrieter so that data is outputted
-    RESOLUTION = (CONFIG["width"], CONFIG["height"])
-    render_product = rep.create.render_product(cam, RESOLUTION)
+    resolution = (CONFIG["width"], CONFIG["height"])
+    render_product = rep.create.render_product(cam, resolution)
     writer.attach(render_product)
 
     # run rep pipeline
@@ -419,7 +424,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         carb.log_error(f"Exception: {e}")
         import traceback
 
